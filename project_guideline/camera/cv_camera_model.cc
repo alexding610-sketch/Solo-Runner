@@ -53,11 +53,11 @@ bool CvCameraModel::PointToPixel(const Eigen::Vector3d& camera_t_point,
 bool CvCameraModel::PixelToRay(const Eigen::Vector2d& pixel,
                                Eigen::Vector3d& ray) const {
   cv::Mat pixel_mat(1, 1, CV_64FC2, (void*)pixel.data());
-  cv::Mat2d point;
+  cv::Mat point;
   // This projects the pixel into camera coordinate frame for z = 1.
   cv::undistortPoints(pixel_mat, point, intrinsic_matrix_mat_,
                       distortion_coeffs_mat_);
-  ray << point(0, 0)[0], point(0, 0)[1], 1.0;
+  ray << point.at<cv::Vec2d>(0, 0)[0], point.at<cv::Vec2d>(0, 0)[1], 1.0;
   return ray.allFinite();
 }
 
