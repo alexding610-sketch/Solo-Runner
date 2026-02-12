@@ -29,16 +29,13 @@
   <application>
     <activity
         android:name=".GuidanceActivity"
-        android:exported="true"
+        android:exported="false"
         android:screenOrientation="reverseLandscape"
         android:configChanges="keyboardHidden"
         android:launchMode="singleTop"
         android:keepScreenOn="true"
         android:theme="@style/Theme.Guidance">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
+      <!-- LAUNCHER intent-filter moved to MainActivity in ui module -->
     </activity>
 
   </application>
