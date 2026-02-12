@@ -31,6 +31,7 @@ import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.framework.MediaPipeException;
 import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.framework.PacketGetter;
+import com.google.research.guideline.classic.sound.SoundPoolControlSystem;
 import com.google.research.guideline.proto.ClassicGuidance;
 import com.google.research.guideline.util.ui.ForceAspectRatioLayout;
 import dagger.hilt.android.AndroidEntryPoint;
@@ -55,6 +56,7 @@ public final class GuidelineClassicFragment extends Hilt_GuidelineClassicFragmen
   private WakeLock partialWakeLock;
   private MediaPipeController mediaPipeController;
   private boolean enableDebugOverlay = true;
+  private SoundPoolControlSystem soundControlSystem;
 
   @Override
   public View onCreateView(
@@ -89,6 +91,9 @@ public final class GuidelineClassicFragment extends Hilt_GuidelineClassicFragmen
             requireNonNull(view.findViewById(R.id.preview_surface_view)),
             this::configureFrameProcessor);
     mediaPipeController.initialize();
+
+    // Initialize sound control system
+    soundControlSystem = SoundPoolControlSystem.createDefault(requireContext());
   }
 
   @SuppressLint("WakelockTimeout")
@@ -112,11 +117,17 @@ public final class GuidelineClassicFragment extends Hilt_GuidelineClassicFragmen
   @Override
   public void onPause() {
     super.onPause();
+    if (soundControlSystem != null) {
+      soundControlSystem.pause();
+    }
   }
 
   @Override
   public void onDestroy() {
     super.onDestroy();
+    if (soundControlSystem != null) {
+      soundControlSystem.stop();
+    }
   }
 
   private void configureFrameProcessor(FrameProcessor frameProcessor) {
@@ -148,8 +159,31 @@ public final class GuidelineClassicFragment extends Hilt_GuidelineClassicFragmen
       return;
     }
     ClassicGuidance guidance = PacketGetter.getProto(packet, ClassicGuidance.parser());
-    if (guidance.hasLineDetection()) {
-      // TODO(dhawkey): Add sound implementation.
+
+    if (soundControlSystem == null) {
+      return;
+    }
+
+    if (guidance.hasStop() && guidance.getStop()) {
+      soundControlSystem.setNoLineFound();
+    } else if (guidance.hasLineDetection()) {
+      // Set lateral position for steering guidance
+      if (guidance.hasLateralPosition()) {
+        soundControlSystem.setPosition(guidance.getLateralPosition());
+      }
+
+      // Set turning angle for turn announcements
+      if (guidance.hasDetectedCurveAngleDegrees()) {
+        soundControlSystem.setTurning(guidance.getDetectedCurveAngleDegrees());
+      }
+
+      // Check for straight path ahead
+      // For now, we consider it straight if the curve angle is very small
+      if (guidance.hasDetectedCurveAngleDegrees()) {
+        // Assume we're checking 100m ahead (this is a simplification)
+        soundControlSystem.checkStraightPath(
+            Math.abs(guidance.getDetectedCurveAngleDegrees()), 100f);
+      }
     }
   }
 }

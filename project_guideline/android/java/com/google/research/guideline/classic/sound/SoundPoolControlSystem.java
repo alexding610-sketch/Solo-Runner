@@ -17,6 +17,7 @@ package com.google.research.guideline.classic.sound;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.VisibleForTesting;
 import android.util.Log;
 import androidx.annotation.Nullable;
@@ -27,6 +28,7 @@ import com.google.research.guideline.classic.sound.PanningStrategy.StereoVolume;
 import com.google.research.guideline.util.math.Interpolator;
 import com.google.research.guideline.util.math.LerpUtils;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Locale;
 
 /**
  * A basic audio implementation of a control system. Positional information causes stereo "steering"
@@ -74,6 +76,15 @@ public final class SoundPoolControlSystem {
   @Nullable private StereoVolume lastSteeringVolume;
   @Nullable private StereoVolume lastWarningVolume;
   private final AtomicInteger soundsLoadedCount = new AtomicInteger(0);
+
+  private TextToSpeech tts;
+  private boolean ttsInitialized = false;
+  private float lastTurnAngle = 0;
+  private long lastTurnAnnouncementTime = 0;
+  private static final long TURN_ANNOUNCEMENT_INTERVAL_MS = 3000; // 3 seconds
+  private boolean straightAnnouncementMade = false;
+  private long lastStraightCheckTime = 0;
+  private static final long STRAIGHT_CHECK_INTERVAL_MS = 5000; // 5 seconds
 
   /** Configurable parameters for the {@link SoundPoolControlSystem}. */
   @AutoValue
@@ -124,9 +135,10 @@ public final class SoundPoolControlSystem {
           .setTurnResource(R.raw.turn)
           .setSteeringSoundResource(R.raw.v4_2_steering)
           .setWarningSoundResource(R.raw.v4_2_warning)
-          .setSteeringPanner(new PanningStrategy.LegacyHardPan(/* reversed= */ true))
+          .setSteeringPanner(new PanningStrategy.LegacyHardPan(/* reversed= */ false))
           .setWarningPanner(new PanningStrategy.LinearThresholdPan(0.4f))
-          .setSteeringRateStrategy((position) -> 1f)
+          .setSteeringRateStrategy((position) ->
+              LerpUtils.clampedLerp(Math.abs(position), 0, 1, 1.0f, 2.0f, Interpolator.LINEAR))
           .setWarningRateStrategy(
               (position) ->
                   LerpUtils.clampedLerp(
@@ -134,8 +146,8 @@ public final class SoundPoolControlSystem {
           .setSteeringSensitivity(0.35f)
           .setSteeringSensitivityCurvature(0.4f)
           .setMaxTurningVolume(0.1875f)
-          .setMinTurnAngleDegrees(4)
-          .setMaxTurnAngleDegrees(8)
+          .setMinTurnAngleDegrees(5)
+          .setMaxTurnAngleDegrees(30)
           .setFastTurns(false);
     }
 
@@ -226,6 +238,20 @@ public final class SoundPoolControlSystem {
     stopId = alertsSoundPool.load(context, config.stopResource(), 1);
     batteryWarningId = alertsSoundPool.load(context, config.lowBatteryResource(), 0);
     alertNotificationId = alertsSoundPool.load(context, config.alertNotificationResource(), 0);
+
+    // Initialize TextToSpeech for turn announcements
+    tts = new TextToSpeech(context, status -> {
+      if (status == TextToSpeech.SUCCESS) {
+        int result = tts.setLanguage(Locale.CHINESE);
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+          Log.e(TAG, "Chinese language not supported for TTS");
+        } else {
+          ttsInitialized = true;
+        }
+      } else {
+        Log.e(TAG, "TTS initialization failed");
+      }
+    });
   }
 
   private void start() {
@@ -272,17 +298,31 @@ public final class SoundPoolControlSystem {
   }
 
   public void setTurning(float turning) {
-    if (turning < 0) {
-      float leftTurnLevel =
-          LerpUtils.clampedLerp(
-              turning, -maxTurnAngleDegrees, -minTurnAngleDegrees, maxTurningVolume, 0);
-      turningSoundPool.setVolume(turnId, leftTurnLevel, 0);
-    } else {
-      float rightTurnLevel =
-          LerpUtils.clampedLerp(
-              turning, minTurnAngleDegrees, maxTurnAngleDegrees, 0, maxTurningVolume);
-      turningSoundPool.setVolume(turnId, 0, rightTurnLevel);
+    long currentTime = System.currentTimeMillis();
+
+    // Announce turn direction using TTS based on angle thresholds
+    if (ttsInitialized && (currentTime - lastTurnAnnouncementTime) > TURN_ANNOUNCEMENT_INTERVAL_MS) {
+      float absTurning = Math.abs(turning);
+      String announcement = null;
+
+      if (absTurning >= 30) {
+        announcement = turning < 0 ? "左左左" : "右右右";
+      } else if (absTurning >= 10) {
+        announcement = turning < 0 ? "左左" : "右右";
+      } else if (absTurning >= 5) {
+        announcement = turning < 0 ? "左" : "右";
+      }
+
+      if (announcement != null && Math.abs(turning - lastTurnAngle) > 2) {
+        tts.speak(announcement, TextToSpeech.QUEUE_FLUSH, null, null);
+        lastTurnAnnouncementTime = currentTime;
+        lastTurnAngle = turning;
+        straightAnnouncementMade = false;
+      }
     }
+
+    // Keep original sound behavior (muted for now, using TTS instead)
+    turningSoundPool.setVolume(turnId, 0, 0);
   }
 
   public void setNoLineFound() {
@@ -293,12 +333,41 @@ public final class SoundPoolControlSystem {
     }
   }
 
+  /**
+   * Check if the path ahead is straight and announce it.
+   * @param maxTurnAngle The maximum turn angle in the path ahead (in degrees)
+   * @param pathDistance The distance of the path being checked (in meters)
+   */
+  public void checkStraightPath(float maxTurnAngle, float pathDistance) {
+    long currentTime = System.currentTimeMillis();
+
+    // If the path ahead is mostly straight (max turn < 5 degrees) and long enough (>= 100m)
+    if (ttsInitialized &&
+        Math.abs(maxTurnAngle) < 5 &&
+        pathDistance >= 100 &&
+        !straightAnnouncementMade &&
+        (currentTime - lastStraightCheckTime) > STRAIGHT_CHECK_INTERVAL_MS) {
+      tts.speak("前方直线，你可以尽情奔跑", TextToSpeech.QUEUE_FLUSH, null, null);
+      straightAnnouncementMade = true;
+      lastStraightCheckTime = currentTime;
+    } else if (Math.abs(maxTurnAngle) >= 5) {
+      // Reset the flag when we encounter a turn
+      straightAnnouncementMade = false;
+    }
+  }
+
   public void stop() {
     steeringSoundPool.stop(steeringId);
     steeringSoundPool.stop(warningId);
     turningSoundPool.stop(turnId);
     steeringSoundPool.release();
     turningSoundPool.release();
+
+    // Release TTS resources
+    if (tts != null) {
+      tts.stop();
+      tts.shutdown();
+    }
   }
 
   public void pause() {
