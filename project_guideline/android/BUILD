@@ -33,12 +33,12 @@ config_setting(
 
 android_binary(
     name = "guideline_app",
-    custom_package = "com.google.research.guideline",
+    custom_package = "com.solorunner",
     manifest = "AndroidManifest.xml",
     manifest_values = {
         "versionCode": "1",
         "versionName": "1.0",
-        "applicationId": "com.google.research.guideline",
+        "applicationId": "com.solorunner",
     },
     multidex = "native",
     nocompress_extensions = [
@@ -46,5 +46,6 @@ android_binary(
     ],
     deps = [
         "//project_guideline/android/java/com/google/research/guideline",
+        "//project_guideline/android/java/com/google/research/guideline/ui",
     ],
 )

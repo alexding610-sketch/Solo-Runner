@@ -19,7 +19,7 @@
 <resources>
     <string
         name="app_label"
-        description="Project Guideline application name [CHAR_LIMIT=25]">
-        Project Guideline
+        description="Solo Runner application name [CHAR_LIMIT=25]">
+        流光引跑
     </string>
 </resources>
