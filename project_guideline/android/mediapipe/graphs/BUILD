@@ -13,8 +13,8 @@
 # limitations under the License.
 
 load(
-    "//research/drishti/framework/tool:drishti_graph.bzl",
-    "drishti_binary_graph",
+    "@mediapipe//mediapipe/framework/tool:mediapipe_graph.bzl",
+    "mediapipe_binary_graph",
 )
 load("//third_party/bazel_rules/rules_cc/cc:cc_library.bzl", "cc_library")
 
@@ -32,7 +32,7 @@ filegroup(
     ],
 )
 
-drishti_binary_graph(
+mediapipe_binary_graph(
     name = "guideline_classic_graph",
     graph = "guideline_classic_graph.pbtxt",
     output_name = "guideline_classic_graph.binarypb",
