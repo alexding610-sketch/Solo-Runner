@@ -29,7 +29,7 @@ node: {
   output_stream: "TENSORS:image_tensors"
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
-    [drishti.ImageToTensorCalculatorOptions.ext] {
+    [mediapipe.ImageToTensorCalculatorOptions.ext] {
       keep_aspect_ratio: false
       output_tensor_float_range {
         min: 0
@@ -47,7 +47,7 @@ node {
   input_stream: "TENSORS:image_tensors"
   output_stream: "TENSORS:line_mask_tensors"
   options {
-    [drishti.InferenceCalculatorOptions.ext] {
+    [mediapipe.InferenceCalculatorOptions.ext] {
       model_path: "guideline_f32input_singlechannel.tflite"
       delegate {
         nnapi {
@@ -82,7 +82,7 @@ node {
 }
 
 node {
-  calculator: "guideline.ClassicRenderDataCalculator"
+  calculator: "guideline::ClassicRenderDataCalculator"
   input_stream: "GUIDANCE:guidance_debug"
   output_stream: "RENDER_DATA:render_data_debug"
 }
