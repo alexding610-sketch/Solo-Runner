@@ -119,8 +119,8 @@ absl::Status MaskOverlayCalculator::GlSetup() {
   };
 
   const std::string shader_src = absl::StrCat(
-      drishti::kDrishtiFragmentShaderPreamble, kMaskFragmentShader);
-  drishti::GlhCreateProgram(drishti::kBasicVertexShader, shader_src.c_str(),
+      mediapipe::kBasicFragmentShaderPreamble, kMaskFragmentShader);
+  mediapipe::GlhCreateProgram(mediapipe::kBasicVertexShader, shader_src.c_str(),
                             NUM_ATTRIBUTES, (const GLchar**)&attr_name[0],
                             attr_location, &program_);
   RET_CHECK(program_) << "Failed to create program";
@@ -155,7 +155,7 @@ absl::Status MaskOverlayCalculator::Process(CalculatorContext* cc) {
         cc->Inputs().Tag(kMaskTensorsTag).Get<std::vector<Tensor>>();
 
     const auto& input_buffer =
-        cc->Inputs().Tag(kImageGpuTag).Get<drishti::GpuBuffer>();
+        cc->Inputs().Tag(kImageGpuTag).Get<mediapipe::GpuBuffer>();
     auto input_texture = gl_helper_.CreateSourceTexture(input_buffer);
     auto output_texture = gl_helper_.CreateDestinationTexture(
         input_buffer.width(), input_buffer.height());
@@ -197,14 +197,14 @@ absl::Status MaskOverlayCalculator::Process(CalculatorContext* cc) {
       // vbo0
       glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
       glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat),
-                   drishti::kBasicSquareVertices, GL_STATIC_DRAW);
+                   mediapipe::kBasicSquareVertices, GL_STATIC_DRAW);
       glEnableVertexAttribArray(ATTRIB_VERTEX);
       glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, nullptr);
 
       // vbo1
       glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
       glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat),
-                   drishti::kBasicTextureVertices, GL_STATIC_DRAW);
+                   mediapipe::kBasicTextureVertices, GL_STATIC_DRAW);
       glEnableVertexAttribArray(ATTRIB_TEXTURE_POSITION);
       glVertexAttribPointer(ATTRIB_TEXTURE_POSITION, 2, GL_FLOAT, 0, 0,
                             nullptr);

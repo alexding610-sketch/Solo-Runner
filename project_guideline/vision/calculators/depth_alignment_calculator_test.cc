@@ -32,7 +32,7 @@
 namespace guideline::vision {
 namespace {
 
-using ::drishti::LandmarkList;
+using ::mediapipe::LandmarkList;
 using mediapipe::CalculatorGraphConfig;
 using mediapipe::ParseTextProtoOrDie;
 

@@ -26,7 +26,7 @@ namespace guideline {
 
 namespace {
 
-using ::drishti::RenderData;
+using ::mediapipe::RenderData;
 using ::mediapipe::CalculatorBase;
 using ::mediapipe::CalculatorContext;
 using ::mediapipe::CalculatorContract;
@@ -40,7 +40,7 @@ constexpr float kDegToRad = M_PI / 180.0f;
 
 }  // namespace
 
-class ClassicRenderDataCalculator : public drishti::CalculatorBase {
+class ClassicRenderDataCalculator : public mediapipe::CalculatorBase {
  public:
   static absl::Status GetContract(CalculatorContract* cc);
   absl::Status Open(CalculatorContext* cc) override;

@@ -39,7 +39,7 @@ namespace guideline::vision {
 namespace {
 using depth::DepthAlignParams;
 using depth::DepthAlignRansacImageNormalized;
-using ::drishti::LandmarkList;
+using ::mediapipe::LandmarkList;
 using ::mediapipe::CalculatorBase;
 using ::mediapipe::CalculatorContext;
 using ::mediapipe::CalculatorContract;
