@@ -29,6 +29,7 @@ android_library(
         "//project_guideline/android/mediapipe/graphs:mobile_graphs",
         "//project_guideline/vision/models:guideline_f32input_singlechannel.tflite",
     ],
+    assets_dir = "",
     exports_manifest = 1,
     manifest = "AndroidManifest.xml",
     resource_files = glob(["res/**"]),
