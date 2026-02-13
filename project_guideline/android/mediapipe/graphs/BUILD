@@ -57,7 +57,6 @@ cc_library(
         "@mediapipe//mediapipe/calculators/tensor:image_to_tensor_calculator",
         "@mediapipe//mediapipe/calculators/tensor:inference_calculator",
         "@mediapipe//mediapipe/calculators/util:annotation_overlay_calculator",
-        "@mediapipe//mediapipe/calculators/util:renderer_calculator",
         "@mediapipe//mediapipe/calculators/util:to_image_calculator",
         "@mediapipe//mediapipe/gpu:gpu_buffer_to_image_frame_calculator",
         "@mediapipe//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
