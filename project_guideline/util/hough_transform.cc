@@ -16,13 +16,16 @@
 
 #include <cmath>
 #include <cstdint>
-#include <numbers>
 #include <vector>
 
 #include <opencv2/core/mat.hpp>
 #include "Eigen/Core"  // keep include
 
 namespace guideline::util {
+
+namespace {
+constexpr float kPi = 3.14159265358979323846f;
+}  // namespace
 
 HoughTransform::HoughTransform(uint16_t position_steps, uint16_t angle_steps,
                                float confidence_threshold, uint16_t mask_width,
@@ -48,7 +51,7 @@ HoughTransform::HoughTransform(uint16_t position_steps, uint16_t angle_steps,
   hough_transform_.resize(hough_width_, angle_steps_);
 
   for (int i = 0; i < angle_steps_; ++i) {
-    float theta = i * std::numbers::pi / angle_steps_;
+    float theta = i * kPi / angle_steps_;
     sin_cache_[i] = std::sin(theta);
     cos_cache_[i] = std::cos(theta);
   }
@@ -131,11 +134,11 @@ std::vector<HoughTransformResult> HoughTransform::Process(const cv::Mat& mask) {
     int best_r = sum_r / point_count;
     float theta = std::atan2(sum_y, sum_x);
     if (theta < 0) {
-      theta += std::numbers::pi;
+      theta += kPi;
     }
     // Convert the line into top/bottom intercept.
     int r = best_r - half_hough_width_;
-    if (connect_quadrants && theta > std::numbers::pi * 3 / 4) {
+    if (connect_quadrants && theta > kPi * 3 / 4) {
       r = -r;
     }
     float zero_intercept = r / std::cos(theta);
